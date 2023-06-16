@@ -2,6 +2,11 @@ import pygame
 import numpy as np
 import math
 from MA import MA
+
+import cProfile, pstats, io
+from pstats import SortKey
+
+
 # import random
  
 WHITE = (255, 255, 255)
@@ -17,7 +22,7 @@ screen_size = (screenX, screenY)
 
 cities = []
 adjacencyMatrix = []
-numCities = 45
+numCities = 100
 
 #random city pos
 # for i in range(numCities):
@@ -67,10 +72,21 @@ startPop = TSPSolver.getPop()
 
  
 running = True
+pr = cProfile.Profile()
+pr.enable()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_e:
+                pr.disable()
+                s = io.StringIO()
+                sortby = SortKey.CUMULATIVE
+                ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+                ps.print_stats()
+                print(s.getvalue())
+                exit()
      
     
     screen.fill(BLACK)
@@ -82,6 +98,7 @@ while running:
     TSPSolver.runIterations(1)
     currBest = TSPSolver.getBest()
     print(currBest)
+    # exit()
 
 
     # DRAW
