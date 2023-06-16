@@ -25,27 +25,20 @@ class MA:
             print(self.pop)
 
         if (self.currGen < self.maxIterations):
-            for i in range(stepSize):
+            for _ in range(stepSize):
                 weights = self.fitness()
                 self.cycleCrossover(weights)
-                self.mutate()
-                # self.localSearch()
+                self.mutate() 
+                self.localSearch()
                 self.currGen+=1
                 if (self.printGenerations):
                     print("Gen " + str(self.currGen) + ":")
                     print(self.pop)
-    #converted
     def initPop(self):
         arr = [i for i in range(len(self.cities))]
-        # arr.remove(self.startingCityIndex)
         return np.array(
             [
-                # np.concatenate(
-                #     ([self.startingCityIndex], np.random.permutation(arr))) for x in range(self.popSize
-                # )
-                
                 np.random.permutation(arr) for x in range(self.popSize)
-                
             ]
         )
 
@@ -54,10 +47,11 @@ class MA:
 
         for chrom in self.pop:
             chromFit = np.sum([self.adMatrix[chrom[i]][chrom[i+1]] for i in range(len(chrom)-1)])
-            #don't questions it 👀
-            chromFit = 10000000/chromFit
             fitness = np.append(fitness, chromFit)
-        
+
+        #don't questions it 👀 (i need to make the highest cost have the least amount of weight)
+        sum = np.sum(fitness)
+        fitness = sum/(fitness)
         sum = np.sum(fitness)
         return (fitness)/sum
     
@@ -109,6 +103,7 @@ class MA:
         self.pop = np.array(newPop, dtype=np.int32)
     
     def mutate(self):
+        
         for chrom in self.pop:
             if (self.mutationRate >= np.random.rand()):
                 randomCityIndex = np.random.randint(len(chrom))
@@ -117,16 +112,68 @@ class MA:
                 chrom[randomCityIndex] = chrom[randomCityIndex2]
                 chrom[randomCityIndex2] = store
         
-
     def localSearch(self):
-        for i in range(len(self.pop)):
-            val = int(self.pop[i], 2)
-            iterations = 0
-            while(iterations < self.localSearchIterations):
-                neighbours = self.getNeighbours(val)
-                val = self.findBest(neighbours, val)
-                iterations+=1
-            self.pop[i]=bin(val).replace("0b","").zfill(self.strLength)
+        # k-opt
+        # swapping does not work if there are less than 4 cities (but like why would you even run that...)
+        if (len(self.cities) > 3):
+            for i in range(len(self.pop)):
+                chrom = self.pop[i].copy()
+                bestKs = []
+                for _ in range(len(chrom)-2):
+                    vOneIndex = 0
+                    vTwoIndex = 1
+                    excludeIndex = 2
+                    cost = self.adMatrix[chrom[vOneIndex]][chrom[vTwoIndex]]
+                    vThreeIndex = self.findLowerCostExclude(chrom, chrom[vTwoIndex], cost, chrom[excludeIndex])
+                    solArr = [chrom]
+                    newChrom = chrom.copy()
+                    hasChanged = True
+                    while (vThreeIndex != -1 and hasChanged):
+                        newChrom = np.array(self.makeArr(newChrom, vOneIndex, vTwoIndex, vThreeIndex))
+                        newChrom = np.flip(np.roll(newChrom, len(newChrom) - 1))
+                        solArr.append(newChrom)
+                        newChrom = solArr[len(solArr) - 1]
+                        cost = self.adMatrix[newChrom[vOneIndex]][newChrom[vTwoIndex]]
+                        newVThreeIndex = self.findLowerCostExclude(newChrom, newChrom[vTwoIndex], cost, newChrom[excludeIndex])
+                        hasChanged = newVThreeIndex != vThreeIndex
+                        vThreeIndex = newVThreeIndex
+                    best = chrom.copy()
+                    for sol in solArr:
+                        if (np.sum([self.adMatrix[best[i]][best[i+1]] for i in range(len(best)-1)]) > np.sum([self.adMatrix[sol[i]][sol[i+1]] for i in range(len(sol)-1)])):
+                            best = sol
+                    bestKs.append(best)
+                    chrom = np.roll(chrom, -1)
+                chrom = np.roll(chrom, -2)
+                best = chrom
+                for sol in bestKs:
+                    if (np.sum([self.adMatrix[best[i]][best[i+1]] for i in range(len(best)-1)]) > np.sum([self.adMatrix[sol[i]][sol[i+1]] for i in range(len(sol)-1)])):
+                            best = sol
+                self.pop[i] = best
+
+
+
+
+    def makeArr(self, chrom, vOneIndex, vTwoIndex, vThreeIndex):
+        arr = [chrom[vOneIndex]]
+        index = vOneIndex
+        while (index != vThreeIndex):
+            index = (index-1)%len(chrom)
+            arr.append(chrom[index])
+
+        index = vTwoIndex
+        while (index != vThreeIndex):
+            arr.append(chrom[index])
+            index = (index+1)%len(chrom)
+        return arr
+
+
+
+    def findLowerCostExclude(self, chrom, vertex, cost, exclude):
+        for v in range(len(self.adMatrix)-1):
+            if (chrom[v] != vertex and chrom[v] != exclude and self.adMatrix[vertex][chrom[v]] < cost):
+                return v;
+        return -1;
+
     
     def getNeighbours(self, val):
         arr = []

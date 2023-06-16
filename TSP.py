@@ -17,19 +17,19 @@ screen_size = (screenX, screenY)
 
 cities = []
 adjacencyMatrix = []
-numCities = 30
+numCities = 45
 
 #random city pos
-for i in range(numCities):
-    cities.append((math.ceil(np.random.rand()*700), math.ceil(np.random.rand()*500)))
+# for i in range(numCities):
+#     cities.append((math.ceil(np.random.rand()*700), math.ceil(np.random.rand()*500)))
 
 #circular city pos
-# angleInc = (math.pi * 2) / numCities
-# angle = 0
-# radius = 200
-# for i in range(numCities):
-#     cities.append(( screenX/2 + radius * math.cos(angle), screenY/2 + radius * math.sin(angle)))
-#     angle+=angleInc
+angleInc = (math.pi * 2) / numCities
+angle = 0
+radius = 200
+for i in range(numCities):
+    cities.append(( screenX/2 + radius * math.cos(angle), screenY/2 + radius * math.sin(angle)))
+    angle+=angleInc
 
 #gen adjacency matrix
 for pos in cities:
@@ -47,10 +47,11 @@ surface_size = (25, 45)
 clock = pygame.time.Clock()
 
 
-##memetic algorithm setup
+# memetic algorithm setup
+updatesPerSecond = 500
 crossRate = 0.5
-maxIterations = 1000
-popSize = 1000
+maxIterations = 1_000_000
+popSize = 100
 strLength = 5
 mutationRate = 0.1
 maxLocalSearchJump = 2
@@ -78,19 +79,19 @@ while running:
 
 
     # LOGIC
-
     TSPSolver.runIterations(1)
     currBest = TSPSolver.getBest()
     print(currBest)
+
+
+    # DRAW
     for i in range(len(currBest)-1):
         pygame.draw.line(screen, (255,255,255),cities[currBest[i]], cities[currBest[i+1]])
 
-
- 
     pygame.display.flip()
      
     # how many updates per second
-    clock.tick(20)
+    # clock.tick(updatesPerSecond)
  
 pygame.quit()
 
