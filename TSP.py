@@ -3,8 +3,6 @@ import numpy as np
 import math
 from MA import MA
 
-import cProfile, pstats, io
-from pstats import SortKey
 
 
 # import random
@@ -22,19 +20,19 @@ screen_size = (screenX, screenY)
 
 cities = []
 adjacencyMatrix = []
-numCities = 100
+numCities = 35
 
 #random city pos
-# for i in range(numCities):
-#     cities.append((math.ceil(np.random.rand()*700), math.ceil(np.random.rand()*500)))
+for i in range(numCities):
+    cities.append((math.ceil(np.random.rand()*700), math.ceil(np.random.rand()*500)))
 
 #circular city pos
-angleInc = (math.pi * 2) / numCities
-angle = 0
-radius = 200
-for i in range(numCities):
-    cities.append(( screenX/2 + radius * math.cos(angle), screenY/2 + radius * math.sin(angle)))
-    angle+=angleInc
+# angleInc = (math.pi * 2) / numCities
+# angle = 0
+# radius = 200
+# for i in range(numCities):
+#     cities.append(( screenX/2 + radius * math.cos(angle), screenY/2 + radius * math.sin(angle)))
+#     angle+=angleInc
 
 #gen adjacency matrix
 for pos in cities:
@@ -54,11 +52,11 @@ clock = pygame.time.Clock()
 
 # memetic algorithm setup
 updatesPerSecond = 500
-crossRate = 0.5
+crossRate = 0.1
 maxIterations = 1_000_000
 popSize = 100
 strLength = 5
-mutationRate = 0.1
+mutationRate = 0.05
 maxLocalSearchJump = 2
 neighbourSize = 2
 localSearchIterations = 10
@@ -72,20 +70,12 @@ startPop = TSPSolver.getPop()
 
  
 running = True
-pr = cProfile.Profile()
-pr.enable()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_e:
-                pr.disable()
-                s = io.StringIO()
-                sortby = SortKey.CUMULATIVE
-                ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-                ps.print_stats()
-                print(s.getvalue())
                 exit()
      
     
@@ -98,7 +88,6 @@ while running:
     TSPSolver.runIterations(1)
     currBest = TSPSolver.getBest()
     print(currBest)
-    # exit()
 
 
     # DRAW

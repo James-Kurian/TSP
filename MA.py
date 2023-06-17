@@ -58,7 +58,7 @@ class MA:
     def cycleCrossover(self, weights):
         newPop = []
         for doCross in np.random.rand(math.ceil(len(self.pop)/2)) <= self.crossRate:
-            #np.random.choice takes two arguments. First, an array of elems to choose. Second, an array with weights with respect to the first array. Effectivley this selection acts like a roulette wheel
+            #np.random.choice takes two arguments. First, an array of elems to choose. Second, an array with weights with respect to the first array. Effectivley this selection acts like a roulette wheel.
             parentOne = self.pop[np.random.choice(range(len(self.pop)), p=weights)]
             parentTwo  = self.pop[np.random.choice(range(len(self.pop)), p=weights)]
 
@@ -111,14 +111,15 @@ class MA:
                 store = chrom[randomCityIndex]
                 chrom[randomCityIndex] = chrom[randomCityIndex2]
                 chrom[randomCityIndex2] = store
-    # @profile
     def localSearch(self):
         # k-opt
         # swapping does not work if there are less than 4 cities (but like why would you even run that...)
         if (len(self.cities) > 3):
             for i in range(len(self.pop)):
                 chrom = self.pop[i].copy()
-                solArr = [chrom.copy()]
+                best = chrom.copy()
+                lowestCost = np.sum([self.adMatrix[best[i]][best[i+1]] for i in range(len(best)-1)])
+                # looping through every edge is prolly not a good idea
                 for _ in range(len(chrom)-2):
                     vOneIndex = 0
                     vTwoIndex = 1
@@ -129,18 +130,27 @@ class MA:
                     hasChanged = True
                     while (vThreeIndex != -1 and hasChanged):
                         newChrom = np.array(self.makeArr(newChrom, vOneIndex, vTwoIndex, vThreeIndex))
-                        solArr.append(newChrom)
+                        newCost = self.isLower(newChrom, lowestCost)
+                        if (newCost):
+                            best = newChrom
+                            lowestCost = newCost
                         cost = self.adMatrix[newChrom[vOneIndex]][newChrom[vTwoIndex]]
                         newVThreeIndex = self.findLowerCostExclude(newChrom, newChrom[vTwoIndex], cost, newChrom[excludeIndex])
                         hasChanged = newVThreeIndex != vThreeIndex
                         vThreeIndex = newVThreeIndex
                     chrom = np.roll(chrom, -1)
-                chrom = np.roll(chrom, -2)
-                best = chrom
-                for sol in solArr:
-                    if (np.sum([self.adMatrix[best[i]][best[i+1]] for i in range(len(best)-1)]) > np.sum([self.adMatrix[sol[i]][sol[i+1]] for i in range(len(sol)-1)])):
-                            best = sol
                 self.pop[i] = best
+
+
+    def findLongestEdgeIndex(self, chrom):
+            highestVal = 0
+            index = 0
+            for i in range(len(chrom)):
+                cost = self.adMatrix[chrom[i]][chrom[i+1]]
+                if (cost > highestVal):
+                    highestVal = cost
+                    index = i
+            return index
 
 
 
@@ -165,7 +175,13 @@ class MA:
         # while (index != vThreeIndex):
         #     arr.append(chrom[index])
         #     index = (index+1)%len(chrom)
-
+    def isLower(self, chrom, compareCost):
+        totalCost = 0
+        for i in range(len(chrom)-1):
+            totalCost += self.adMatrix[chrom[i]][chrom[i+1]]
+            if (totalCost > compareCost):
+                return False
+        return totalCost
 
 
     def findLowerCostExclude(self, chrom, vertex, cost, exclude):
